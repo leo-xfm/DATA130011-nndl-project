@@ -360,7 +360,6 @@ class BatchNorm2D(Layer):
         self.weight_decay = weight_decay
         self.weight_decay_lambda = weight_decay_lambda
         
-        # Learnable parameters
         self.params = {
             'gamma': np.ones((1, num_features, 1, 1)),  # [1, num_features, 1, 1]
             'beta': np.zeros((1, num_features, 1, 1))   # [1, num_features, 1, 1]
@@ -368,7 +367,6 @@ class BatchNorm2D(Layer):
         
         self.grads = {'gamma': None, 'beta': None}
         
-        # Running statistics (for inference phase)
         self.running_mean = np.zeros((1, num_features, 1, 1))
         self.running_var = np.ones((1, num_features, 1, 1))
         
@@ -385,19 +383,13 @@ class BatchNorm2D(Layer):
         """
         self.input = X
         batch_size, num_features, H, W = X.shape
-        
-        # Compute mean and variance over batch (but not over spatial dimensions)
         mean = np.mean(X, axis=(0, 2, 3), keepdims=True)  # [1, num_features, 1, 1]
         var = np.var(X, axis=(0, 2, 3), keepdims=True)  # [1, num_features, 1, 1]
 
-        # Update running statistics
         self.running_mean = self.momentum * self.running_mean + (1 - self.momentum) * mean
         self.running_var = self.momentum * self.running_var + (1 - self.momentum) * var
 
-        # Normalize
         X_norm = (X - mean) / np.sqrt(var + self.eps)  # [batch_size, num_features, H, W]
-
-        # Scale and shift
         output = self.params['gamma'] * X_norm + self.params['beta']
         return output
 
@@ -410,7 +402,6 @@ class BatchNorm2D(Layer):
         var = np.var(self.input, axis=(0, 2, 3), keepdims=True)
         X_norm = (self.input - mean) / np.sqrt(var + self.eps)
 
-        # Gradients for gamma and beta
         grad_gamma = np.sum(grads * X_norm, axis=(0, 2, 3), keepdims=True)
         grad_beta = np.sum(grads, axis=(0, 2, 3), keepdims=True)
 
@@ -418,11 +409,9 @@ class BatchNorm2D(Layer):
             grad_gamma += self.weight_decay_lambda * grad_gamma
             grad_beta += self.weight_decay_lambda * grad_beta
 
-        # Backpropagate to the input
         grad_input = (grads - np.mean(grads, axis=(0, 2, 3), keepdims=True) - 
                       X_norm * np.mean(grads * X_norm, axis=(0, 2, 3), keepdims=True)) / np.sqrt(var + self.eps)
 
-        # Apply the gradients
         self.grads = {'gamma': grad_gamma, 'beta': grad_beta}
             
         return grad_input
