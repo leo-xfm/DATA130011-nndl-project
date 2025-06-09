@@ -1,0 +1,9 @@
+torch
+torchvision
+torchsummary
+opencv-python
+timm
+tqdm
+numpy
+matplotlib.pyplot
+random
